@@ -31,6 +31,12 @@ There is **no in-process CL sandbox**. Untrusted Lisp runs in a container image 
 
 `process-protocol:run` is used when `*process-backend*` is bound; otherwise UIOP. `process-protocol` is a soft dependency (not in `:depends-on`).
 
+Offline demo (policy object + native `sandbox-denied`; no packet filter):
+
+```bash
+sbcl --load examples/egress.lisp
+```
+
 ## License
 
 MIT
