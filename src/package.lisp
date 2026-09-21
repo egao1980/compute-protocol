@@ -32,6 +32,18 @@
            #:sandbox-spec-allow-lisp-p
            #:sandbox-spec-artifacts
 
+           #:egress-rule
+           #:egress-rule-p
+           #:make-egress-rule
+           #:egress-rule-host
+           #:egress-rule-port
+
+           #:sandbox-network-policy
+           #:sandbox-network-policy-p
+           #:make-sandbox-network-policy
+           #:sandbox-network-policy-egress
+           #:sandbox-network-policy-dns
+
            #:sandbox-result
            #:sandbox-result-p
            #:make-sandbox-result

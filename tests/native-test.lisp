@@ -43,6 +43,17 @@
                  :network :allow))
                'compute-protocol:sandbox-denied)))
 
+(deftest native-network-policy-denied
+  (ok (signals (compute-protocol:run-sandboxed
+                (compute-protocol:make-native-process-backend :deny-network-p t)
+                (compute-protocol:make-sandbox-spec
+                 :command '("echo" "hi")
+                 :network (compute-protocol:make-sandbox-network-policy
+                           :egress (list (compute-protocol:make-egress-rule
+                                          :host "example.com"
+                                          :port 443)))))
+               'compute-protocol:sandbox-denied)))
+
 (deftest native-code-denied-without-allow-lisp
   (ok (signals (compute-protocol:run-sandboxed
                 (compute-protocol:make-native-process-backend)
