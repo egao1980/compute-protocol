@@ -74,8 +74,12 @@ Wall-clock is always honored."))
           run)))))
 
 (defun %read-stream (stream)
-  (if (and stream (open-stream-p stream))
-      (uiop:slurp-stream-string stream)
+  "Drain STREAM; \"\" when absent, closed, or torn down under us (ABCL
+   closes the pipe when the child is terminated — STREAM-ERROR)."
+  (or (and stream
+           (ignore-errors
+            (and (open-stream-p stream)
+                 (uiop:slurp-stream-string stream))))
       ""))
 
 (defun %launch-and-wait (argv &key env timeout)
