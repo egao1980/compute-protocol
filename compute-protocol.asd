@@ -1,5 +1,5 @@
 (defsystem "compute-protocol"
-  :version "0.1.0"
+  :version "0.2.0"
   :description "CLOS sandboxed compute protocol for cl-stack (run-sandboxed + native trusted backend)"
   :author "egao1980"
   :license "MIT"
@@ -35,7 +35,8 @@
                (:file "protocol-test")
                (:file "native-test")
                (:file "capability-test")
-               (:file "restarts-test"))
+               (:file "restarts-test")
+               (:file "demo-test"))
   :perform (test-op (o c)
              (unless (symbol-call :rove :run c)
                (error "tests failed for ~A" (component-name c)))))

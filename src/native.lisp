@@ -1,7 +1,9 @@
 (in-package #:compute-protocol)
 
 ;;; TRUSTED-ONLY. This backend does not isolate: no mount namespace, no
-;;; network jail, no cgroup limits. Wall-clock is still enforced.
+;;; network jail, no packet filter, no cgroup limits. Wall-clock is still
+;;; enforced. A SANDBOX-NETWORK-POLICY is recorded on the spec only —
+;;; native never filters host/port. Isolation is a backend property.
 
 (defclass native-process-backend (compute-backend)
   ((trusted-only-p :initarg :trusted-only-p :reader native-trusted-only-p
@@ -13,7 +15,10 @@
   (:documentation
    "Trusted-only colocated backend. Does NOT isolate the child process.
 TRUSTED-ONLY-P defaults to T. CPU/memory/network/mounts are not enforced
-unless DENY-NETWORK-P / DENY-MOUNTS-P is set. Wall-clock is always honored."))
+unless DENY-NETWORK-P / DENY-MOUNTS-P is set. :allow and a
+SANDBOX-NETWORK-POLICY remain trusted-only: packets are not filtered.
+DENY-NETWORK-P signals SANDBOX-DENIED for :allow and for a policy object.
+Wall-clock is always honored."))
 
 (defun make-native-process-backend (&key (trusted-only-p t)
                                       deny-network-p
@@ -69,8 +74,12 @@ unless DENY-NETWORK-P / DENY-MOUNTS-P is set. Wall-clock is always honored."))
           run)))))
 
 (defun %read-stream (stream)
-  (if (and stream (open-stream-p stream))
-      (uiop:slurp-stream-string stream)
+  "Drain STREAM; \"\" when absent, closed, or torn down under us (ABCL
+   closes the pipe when the child is terminated — STREAM-ERROR)."
+  (or (and stream
+           (ignore-errors
+            (and (open-stream-p stream)
+                 (uiop:slurp-stream-string stream))))
       ""))
 
 (defun %launch-and-wait (argv &key env timeout)
@@ -134,12 +143,14 @@ else UIOP. Wall-clock is always enforced when TIMEOUT is set."
            :spec spec
            :policy :lisp
            :message "native backend refuses :code unless :allow-lisp t"))
-  (when (and (not (eq (sandbox-spec-network spec) :none))
-             (native-deny-network-p backend))
-    (error 'sandbox-denied
-           :spec spec
-           :policy :network
-           :message "network is denied by native-process-backend"))
+  (let ((network (sandbox-spec-network spec)))
+    (when (and (native-deny-network-p backend)
+               (or (eq network :allow)
+                   (sandbox-network-policy-p network)))
+      (error 'sandbox-denied
+             :spec spec
+             :policy :network
+             :message "network is denied by native-process-backend")))
   (when (and (sandbox-spec-mounts spec)
              (native-deny-mounts-p backend))
     (error 'sandbox-denied

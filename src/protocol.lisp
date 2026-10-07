@@ -21,11 +21,50 @@
    (artifacts :initarg :artifacts :reader sandbox-spec-artifacts :initform nil))
   (:documentation
    "Command (list of strings) or CODE (string) plus RUNTIME
-(:native, :sbcl, or an image string). NETWORK is :none (default) or :allow.
+(:native, :sbcl, or an image string). NETWORK is :none (default), :allow,
+or a SANDBOX-NETWORK-POLICY. Isolation is a backend property.
 WALL-CLOCK is seconds; MEMORY-LIMIT is bytes."))
+
+(defclass egress-rule ()
+  ((host :initarg :host :reader egress-rule-host)
+   (port :initarg :port :reader egress-rule-port))
+  (:documentation
+   "Allowed destination: HOST (string) and PORT (integer).
+Host \"*\" is a wildcard for backends that match rules."))
+
+(defun egress-rule-p (object)
+  (typep object 'egress-rule))
+
+(defun make-egress-rule (&key host port)
+  (check-type host string)
+  (check-type port integer)
+  (make-instance 'egress-rule :host host :port port))
+
+(defclass sandbox-network-policy ()
+  ((egress :initarg :egress :reader sandbox-network-policy-egress :initform nil)
+   (dns :initarg :dns :reader sandbox-network-policy-dns :initform nil))
+  (:documentation
+   "Declarative egress list plus optional DNS. Backends interpret this;
+native-process-backend does not filter packets (trusted-only)."))
+
+(defun sandbox-network-policy-p (object)
+  (typep object 'sandbox-network-policy))
+
+(defun make-sandbox-network-policy (&key egress dns)
+  (when egress
+    (check-type egress list)
+    (dolist (rule egress)
+      (unless (egress-rule-p rule)
+        (error 'compute-error
+               :message (format nil "egress entries must be egress-rule, got ~s" rule)))))
+  (make-instance 'sandbox-network-policy :egress egress :dns dns))
 
 (defun sandbox-spec-p (object)
   (typep object 'sandbox-spec))
+
+(defun %valid-sandbox-network-p (network)
+  (or (member network '(:none :allow))
+      (sandbox-network-policy-p network)))
 
 (defun make-sandbox-spec (&key command code (runtime :native) mounts env
                             (network :none) cpu-limit memory-limit wall-clock
@@ -34,9 +73,10 @@ WALL-CLOCK is seconds; MEMORY-LIMIT is bytes."))
     (check-type command list))
   (when code
     (check-type code string))
-  (unless (member network '(:none :allow))
+  (unless (%valid-sandbox-network-p network)
     (error 'compute-error
-           :message (format nil "network must be :none or :allow, got ~s" network)))
+           :message (format nil "network must be :none, :allow, or sandbox-network-policy, got ~s"
+                            network)))
   (make-instance 'sandbox-spec
                  :command command
                  :code code
