@@ -36,8 +36,9 @@
   (ok (member "/dev/null" compute-protocol:+device-paths+ :test #'string=))
   (let* ((d (compute-protocol:default-deny-read #p"/home/u/"))
          (names (mapcar #'uiop:native-namestring d)))
-    (ok (member "/home/u/.ssh/" names :test #'string=))
-    (ok (member "/home/u/.netrc" names :test #'string=))
+    ;; Native namestrings: \home\u\.ssh\ on Windows.
+    (ok (member (%ns #p"/home/u/.ssh/") names :test #'string=))
+    (ok (member (%ns #p"/home/u/.netrc") names :test #'string=))
     (ok (every #'uiop:absolute-pathname-p d))))
 
 (deftest-parametrize confinement-rejects
@@ -369,7 +370,7 @@ plus area/link → outside/ (when ln -s works)."
       '(("BAR" . "3") ("FOO" . "2") ("HOME" . "/h") ("LC_ALL" . "C") ("LC_CTYPE" . "UTF-8")
         ("PATH" . "/bin")))
      ('(:env-allow ("PATH")) nil #p"/t/x/"
-      '(("PATH" . "/bin") ("TMPDIR" . "/t/x/")))
+      `(("PATH" . "/bin") ("TMPDIR" . ,(%ns #p"/t/x/"))))
      ('(:env-allow ("AWS_*")) nil nil
       '(("AWS_KEY" . "k"))))
   (let ((c (apply #'compute-protocol:make-confinement :writable '("/w/") args)))
@@ -386,8 +387,8 @@ plus area/link → outside/ (when ln -s works)."
   (let* ((c (compute-protocol:make-confinement :writable '("/w/") :readable '("/r/f")
                                                :deny-read nil :cpu-limit 7))
          (s (compute-protocol:confinement-summary c)))
-    (ok (equal '("/w/") (getf s :writable)))
-    (ok (equal '("/r/f") (getf s :readable)))
+    (ok (equal (list (%ns #p"/w/")) (getf s :writable)) "native namestrings")
+    (ok (equal (list (%ns #p"/r/f")) (getf s :readable)))
     (ok (eq :all (getf s :read)))
     (ok (eq :none (getf s :network)))
     (ok (eq :scrub (getf s :env-mode)))

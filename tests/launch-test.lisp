@@ -47,6 +47,9 @@
              (ok (equal "2" (%env-value "EXTRA" launch)) ":env extra")
              (ok (every (lambda (n)
                           (or (member n '("KEEP" "EXTRA" "TMPDIR" "STACK_COMPUTE_CONFINEMENT") :test #'string=)
+                              ;; Windows env names are case-insensitive (ProgramData ~ PROGRAMDATA).
+                              (and (uiop:os-windows-p)
+                                   (member n compute-protocol:+default-env-allow+ :test #'string-equal))
                               (some (lambda (pat)
                                       (if (char= #\* (char pat (1- (length pat))))
                                           (uiop:string-prefix-p (subseq pat 0 (1- (length pat))) n)

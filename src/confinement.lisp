@@ -286,7 +286,10 @@ backend lacks → CONFINEMENT-UNSUPPORTED (MISSING in feature order), restart US
   (uiop:native-namestring pathname))
 
 (defun %dir-ns-p (ns)
-  (and (plusp (length ns)) (char= #\/ (char ns (1- (length ns))))))
+  "NS names a directory: it ends in / (or \\ on Windows, where native namestrings use it)."
+  (and (plusp (length ns))
+       (let ((c (char ns (1- (length ns)))))
+         (or (char= c #\/) (and (char= c #\\) (uiop:os-windows-p))))))
 
 (defun %join-ns (acc part)
   (concatenate 'string acc (if (%dir-ns-p acc) "" "/") part))
@@ -422,11 +425,15 @@ directories (and SBCL_HOME), so the image itself can be re-spawned confined."
 
 (defun %under-p (target entry)
   "TARGET and ENTRY physical native namestrings: TARGET is ENTRY or below it (a directory
-entry ends in /), or equals a file entry."
-  (if (%dir-ns-p entry)
-      (or (uiop:string-prefix-p entry target)
-          (string= target entry :end2 (1- (length entry))))
-      (string= target entry)))
+entry ends in /, or \\ on Windows), or equals a file entry. Case-insensitive on Windows."
+  (let ((same (if (uiop:os-windows-p) #'string-equal #'string=)))
+    (if (%dir-ns-p entry)
+        (let ((n (1- (length entry))))
+          (or (and (>= (length target) (length entry))
+                   (funcall same entry target :end2 (length entry)))
+              (and (= (length target) n)
+                   (funcall same target entry :end2 n))))
+        (funcall same target entry))))
 
 (defun %physical-ns (path)
   (%ns (physical-path path)))
