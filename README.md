@@ -31,6 +31,10 @@ There is **no in-process CL sandbox**. Untrusted Lisp runs in a container image 
 
 `process-protocol:run` is used when `*process-backend*` is bound; otherwise UIOP. `process-protocol` is a soft dependency (not in `:depends-on`).
 
+## Confinement (0.3.0, R4d)
+
+A `confinement` says what one command may touch: `:writable` directories (the area), `:readable` paths, `:read :all` (minus `:deny-read`, default the credential dirs in `+default-deny-read+`) or `:read :system`, `:network :none` (default) / `:allow` / a policy, an environment scrub (`:env-mode :scrub`, `+default-env-allow+`), a private `TMPDIR`, limits. A `confining-backend` (`compute-backend-seatbelt`, `compute-backend-landlock`) reports `confinement-features` and turns it into a launch: `confine-command` → `confined-launch` (argv + complete env + directory) that any launcher runs — `run-confined`, the supervisor's `compute-executor`, a pty. Unsupported features fail closed (`confinement-unsupported`). `model-confinement-backend` is the reference model (`confinement-decide`), **not a sandbox**. Every backend runs `compute-protocol/confinement-suite` (`run-confinement-suite`). Brief: [cl-stack confinement.md](https://github.com/egao1980/cl-stack/blob/main/docs/capabilities/confinement.md).
+
 Offline demo (policy object + native `sandbox-denied`; no packet filter):
 
 ```bash
