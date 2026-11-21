@@ -57,7 +57,9 @@
            (c (stack-compute-suite:suite-confinement f backend)))
       (ok (equal (list (%ns (stack-compute-suite:fixture-area f)))
                  (mapcar #'%ns (compute-protocol:confinement-writable c))))
-      (ok (equal (list (%ns (stack-compute-suite:fixture-readonly f)))
+      (ok (equal (list (%ns (stack-compute-suite:fixture-readonly f))
+                       (%ns (compute-protocol:physical-path
+                             (stack-compute-suite:probe-program-pathname))))
                  (mapcar #'%ns (compute-protocol:confinement-readable c))))
       (ok (eq read (compute-protocol:confinement-read c)))
       (ok (equal (list (%ns (stack-compute-suite:fixture-secrets f)))
@@ -68,6 +70,33 @@
                                     :test #'string=))))
       (ok (eq :allow (compute-protocol:confinement-network
                       (stack-compute-suite:suite-confinement f backend :network :allow)))))))
+
+;;; #4: under READ :SYSTEM the probe program itself must be readable (a kernel
+;;; backend that enforces the read set cannot otherwise open the script), while a
+;;; path outside the read set stays denied: the probe's file is listed, not a tree.
+(deftest suite-confinement-probe-readable-under-read-system
+  (stack-compute-suite:with-suite-fixture (f)
+    (let* ((backend (compute-protocol:make-model-confinement-backend
+                     :features '(:filesystem :network-none :read-system)))
+           (c (stack-compute-suite:suite-confinement f backend))
+           (probe (stack-compute-suite:probe-program-pathname)))
+      (ok (eq :system (compute-protocol:confinement-read c)))
+      (ok (eq :allow (compute-protocol:confinement-decide c :read probe))
+          "the probe program is readable")
+      (ok (eq :allow (compute-protocol:confinement-decide
+                      c :read (merge-pathnames "r" (stack-compute-suite:fixture-readonly f)))))
+      (ok (eq :deny (compute-protocol:confinement-decide
+                     c :read (merge-pathnames "victim" (stack-compute-suite:fixture-outside f))))
+          "outside/victim stays unreadable")
+      (ok (eq :deny (compute-protocol:confinement-decide
+                     c :read (merge-pathnames "token" (stack-compute-suite:fixture-secrets f))))
+          "secrets stay unreadable")
+      (ok (eq :deny (compute-protocol:confinement-decide
+                     c :read (merge-pathnames "suite.lisp" probe)))
+          "the probe's file is listed, not its directory")
+      (ok (eq :deny (compute-protocol:confinement-decide
+                     c :write probe))
+          "the probe program is not writable"))))
 
 (deftest suite-confinement-needs-a-read-policy
   (stack-compute-suite:with-suite-fixture (f)
