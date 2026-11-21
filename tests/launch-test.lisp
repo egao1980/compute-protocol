@@ -192,9 +192,14 @@
               "env and start directory reached the child")
           (ok (equal (format nil "err~%") (compute-protocol:sandbox-result-stderr r)))))))
 
+(defun %can-setenv-p ()
+  (ignore-errors
+   (setf (uiop:getenv "CP_R4D_PROBE") "1")
+   (equal "1" (uiop:getenv "CP_R4D_PROBE"))))
+
 (deftest run-confined-scrubs-image-env
-  (if (not (unix-p))
-      (skip "/bin/sh")
+  (if (not (and (unix-p) (%can-setenv-p)))
+      (skip "/bin/sh and (setf uiop:getenv)")
       (with-temp-tree (root "area/" "ro/")
         (let ((old (uiop:getenv "CP_R4D_SECRET")))
           (setf (uiop:getenv "CP_R4D_SECRET") "leak")
