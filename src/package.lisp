@@ -31,6 +31,7 @@
            #:sandbox-spec-wall-clock
            #:sandbox-spec-allow-lisp-p
            #:sandbox-spec-artifacts
+           #:sandbox-spec-confinement
 
            #:egress-rule
            #:egress-rule-p
@@ -72,6 +73,74 @@
 
            #:compute-adapter
            #:compute-adapter-backend
-           #:make-compute-adapter))
+           #:make-compute-adapter
+
+           ;; R4d-0: confinement of one command
+           #:invalid-confinement
+           #:invalid-confinement-field
+           #:invalid-confinement-value
+           #:confinement-unsupported
+           #:confinement-unsupported-backend
+           #:confinement-unsupported-missing
+           #:confinement-unavailable
+           #:confinement-unavailable-backend
+           #:confinement-unavailable-reason
+
+           #:+confinement-features+
+           #:+default-env-allow+
+           #:+default-deny-read+
+           #:+device-paths+
+
+           #:confinement
+           #:confinement-p
+           #:make-confinement
+           #:confinement-writable
+           #:confinement-readable
+           #:confinement-read
+           #:confinement-deny-read
+           #:confinement-network
+           #:confinement-env-mode
+           #:confinement-env-allow
+           #:confinement-env
+           #:confinement-tmp
+           #:confinement-cpu-limit
+           #:confinement-memory-limit
+           #:confinement-file-size-limit
+           #:confinement-process-limit
+           #:confinement-wall-clock
+           #:default-deny-read
+
+           #:confining-backend
+           #:model-confinement-backend
+           #:make-model-confinement-backend
+           #:model-backend-features
+           #:confinement-features
+           #:confinement-supports-p
+           #:confinement-available-p
+           #:backend-confine-argv
+
+           #:confinement-requirements
+           #:check-confinement
+           #:physical-path
+           #:resolve-confinement
+           #:system-read-paths
+           #:confinement-decide
+           #:confinement-environment
+           #:image-environment
+           #:confinement-summary
+
+           #:confined-launch
+           #:confined-launch-p
+           #:confined-launch-backend
+           #:confined-launch-confinement
+           #:confined-launch-argv
+           #:confined-launch-env
+           #:confined-launch-directory
+           #:confined-launch-tmp
+           #:confined-launch-released-p
+           #:confine-command
+           #:release-confined-launch
+           #:with-confined-launch
+           #:run-confined))
 
 (in-package #:compute-protocol)

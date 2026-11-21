@@ -18,12 +18,14 @@
    (memory-limit :initarg :memory-limit :reader sandbox-spec-memory-limit :initform nil)
    (wall-clock :initarg :wall-clock :reader sandbox-spec-wall-clock :initform nil)
    (allow-lisp :initarg :allow-lisp :reader sandbox-spec-allow-lisp-p :initform nil)
-   (artifacts :initarg :artifacts :reader sandbox-spec-artifacts :initform nil))
+   (artifacts :initarg :artifacts :reader sandbox-spec-artifacts :initform nil)
+   (confinement :initarg :confinement :reader sandbox-spec-confinement :initform nil))
   (:documentation
    "Command (list of strings) or CODE (string) plus RUNTIME
 (:native, :sbcl, or an image string). NETWORK is :none (default), :allow,
 or a SANDBOX-NETWORK-POLICY. Isolation is a backend property.
-WALL-CLOCK is seconds; MEMORY-LIMIT is bytes."))
+WALL-CLOCK is seconds; MEMORY-LIMIT is bytes. CONFINEMENT (0.3.0) is a
+CONFINEMENT for a CONFINING-BACKEND, or NIL."))
 
 (defclass egress-rule ()
   ((host :initarg :host :reader egress-rule-host)
@@ -68,7 +70,7 @@ native-process-backend does not filter packets (trusted-only)."))
 
 (defun make-sandbox-spec (&key command code (runtime :native) mounts env
                             (network :none) cpu-limit memory-limit wall-clock
-                            allow-lisp artifacts)
+                            allow-lisp artifacts confinement)
   (when command
     (check-type command list))
   (when code
@@ -88,7 +90,8 @@ native-process-backend does not filter packets (trusted-only)."))
                  :memory-limit memory-limit
                  :wall-clock wall-clock
                  :allow-lisp allow-lisp
-                 :artifacts artifacts))
+                 :artifacts artifacts
+                 :confinement confinement))
 
 (defun %command-strings (items)
   (loop for x in items
