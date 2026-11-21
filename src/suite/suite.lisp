@@ -149,8 +149,9 @@ directory), physical paths, and open the loopback listener."
        (release-suite-fixture ,var))))
 
 (defun suite-confinement (fixture backend &key read network)
-  "The case's confinement: WRITABLE (area), READABLE (ro), ENV (STACK_COMPUTE_SUITE_KEEP
-= \"kept\"), TMP :PRIVATE, NETWORK NETWORK (default :NONE). READ (default: :ALL with
+  "The case's confinement: WRITABLE (area), READABLE (ro and the probe program's own
+file, physical, so the probe runs under READ :SYSTEM; its directory stays unlisted),
+ENV (STACK_COMPUTE_SUITE_KEEP = \"kept\"), TMP :PRIVATE, NETWORK NETWORK (default :NONE). READ (default: :ALL with
 DENY-READ (secrets) when BACKEND supports :DENY-READ, else :SYSTEM with DENY-READ
 \(secrets) — not listed, so unreadable — when it supports :READ-SYSTEM, else
 CONFINEMENT-UNSUPPORTED)."
@@ -160,7 +161,8 @@ CONFINEMENT-UNSUPPORTED)."
                         (t (error 'sc:confinement-unsupported
                                   :backend backend :missing '(:deny-read :read-system)))))))
     (sc:make-confinement :writable (list (fixture-area fixture))
-                         :readable (list (fixture-readonly fixture))
+                         :readable (list (fixture-readonly fixture)
+                                         (sc:physical-path (probe-program-pathname)))
                          :read read
                          :deny-read (list (fixture-secrets fixture))
                          :network (or network :none)
