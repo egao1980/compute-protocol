@@ -148,8 +148,11 @@ inherit), environment ops read the launch's environment."))
         (:delete (%posix-remove (abs* (first args))))
         (:rename (%with-errno-mapping (sb-posix:rename (abs* (first args)) (abs* (second args)))))
         ;; A symlink's target is stored as written, resolved against the link's directory.
-        (:symlink (%with-errno-mapping (sb-posix:symlink (first args) (abs* (second args)))))
-        (:hardlink (%with-errno-mapping (sb-posix:link (abs* (first args)) (abs* (second args)))))
+        ;; sb-posix has no symlink/link on Windows (no confining backend there in R4d).
+        (:symlink #-win32 (%with-errno-mapping (sb-posix:symlink (first args) (abs* (second args))))
+                  #+win32 (list :error "symlink: not supported on Windows"))
+        (:hardlink #-win32 (%with-errno-mapping (sb-posix:link (abs* (first args)) (abs* (second args))))
+                   #+win32 (list :error "hardlink: not supported on Windows"))
         (:connect (%connect (first args) (second args)))))))
 
 (defun %model-op (launch op)

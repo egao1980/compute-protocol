@@ -265,3 +265,9 @@
                     backend (compute-protocol:make-sandbox-spec :code "(+ 1 2)" :confinement c))
                    'compute-protocol:sandbox-denied)
           ":code is refused"))))
+
+;;; The confinement suite (suite-test.lisp) needs SBCL and POSIX paths, symlinks
+;;; and /bin/sh: elsewhere it is not loaded, and this says why.
+#+(or (not sbcl) win32)
+(deftest confinement-suite-not-here
+  (skip "confinement suite: SBCL on Unix only (no confining backend on Windows in R4d)"))

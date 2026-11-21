@@ -62,7 +62,7 @@
                (:file "confinement-support")
                (:file "confinement-test")   ; R4d-0: the value, requirements, checks, model
                (:file "launch-test")        ; R4d-0: confine-command, release, run-confined
-               (:file "suite-test" :if-feature :sbcl))
+               (:file "suite-test" :if-feature (:and :sbcl (:not :win32))))
   :perform (test-op (o c)
              (unless (symbol-call :rove :run c)
                (error "tests failed for ~A" (component-name c)))))
