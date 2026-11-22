@@ -82,11 +82,14 @@ Wall-clock is always honored."))
                  (uiop:slurp-stream-string stream))))
       ""))
 
-(defun %launch-and-wait (argv &key env timeout)
-  "Run ARGV via UIOP. TIMEOUT seconds → first value :TIMEOUT."
+(defun %launch-and-wait (argv &key env timeout directory input)
+  "Run ARGV via UIOP. TIMEOUT seconds → first value :TIMEOUT. INPUT is NIL or
+   a pathname read as standard input."
   (let ((info (apply #'uiop:launch-program argv
                      (append (list :output :stream
                                    :error-output :stream)
+                             (when input (list :input input))
+                             (when directory (list :directory directory))
                              (when env (list :environment env))))))
     (unwind-protect
          (let ((timed-out nil))
@@ -112,29 +115,61 @@ Wall-clock is always honored."))
         (ignore-errors (uiop:terminate-process info :urgent t))
         (ignore-errors (uiop:wait-process info))))))
 
-(defun %run-uiop (argv &key env timeout)
+(defun %host-directory (directory)
+  "DIRECTORY (a native namestring or pathname) as a directory pathname, or NIL."
+  (when directory
+    (uiop:ensure-directory-pathname
+     (if (stringp directory) (uiop:parse-native-namestring directory) directory))))
+
+(defun %input-file (input)
+  "Write INPUT (a string, UTF-8, or an octet vector) to a fresh temporary file
+   → its pathname. The caller deletes it."
+  (if (stringp input)
+      (uiop:with-temporary-file (:pathname path :stream s :keep t
+                                 :external-format :utf-8 :prefix "compute-in")
+        (write-string input s)
+        path)
+      (uiop:with-temporary-file (:pathname path :stream s :keep t
+                                 :element-type '(unsigned-byte 8) :prefix "compute-in")
+        (write-sequence (coerce input '(vector (unsigned-byte 8))) s)
+        path)))
+
+(defun %run-uiop (argv &key env timeout directory input)
+  (let ((input-file (when input (%input-file input))))
+    (unwind-protect
+         (%run-uiop-1 argv :env env :timeout timeout :directory directory
+                           :input input-file)
+      (when input-file (ignore-errors (delete-file input-file))))))
+
+(defun %run-uiop-1 (argv &key env timeout directory input)
   (let ((env-list (%env-strings env)))
     (if timeout
         ;; Poll + terminate so we can distinguish timeout from a real exit.
         ;; UIOP RUN-PROGRAM :TIMEOUT (when present) only yields an exit code.
-        (%launch-and-wait argv :env env-list :timeout timeout)
+        (%launch-and-wait argv :env env-list :timeout timeout
+                                :directory directory :input input)
         (multiple-value-bind (out err code)
             (apply #'uiop:run-program argv
                    (append (list :ignore-error-status t
                                  :output '(:string :stripped nil)
                                  :error-output '(:string :stripped nil))
+                           (when input (list :input input))
+                           (when directory (list :directory directory))
                            (when env-list (list :environment env-list))))
           (values (or code 0) (or out "") (or err ""))))))
 
-(defun %invoke-process (argv &key env timeout)
+(defun %invoke-process (argv &key env timeout directory input)
   "process-protocol:run when *process-backend* is bound and TIMEOUT is NIL,
 else UIOP. Wall-clock is always enforced when TIMEOUT is set."
   (let ((run (and (null timeout) (%process-protocol-run))))
     (if run
         (multiple-value-bind (code out err)
-            (apply run argv (append (when env (list :env (%env-strings env)))))
+            (apply run argv (append (list :output :string :error-output :string)
+                                  (when env (list :env (%env-strings env)))
+                                  (when directory (list :directory directory))
+                                  (when input (list :input input))))
           (values code (%to-string out) (%to-string err)))
-        (%run-uiop argv :env env :timeout timeout))))
+        (%run-uiop argv :env env :timeout timeout :directory directory :input input))))
 
 (defun %check-native-policy (backend spec)
   (when (and (sandbox-spec-code spec)
@@ -191,7 +226,9 @@ else UIOP. Wall-clock is always enforced when TIMEOUT is set."
      retry
        (return-from %run-argv-with-limits
          (multiple-value-bind (code out err)
-             (%invoke-process argv :env env :timeout limit)
+             (%invoke-process argv :env env :timeout limit
+                             :directory (%host-directory (sandbox-spec-directory spec))
+                             :input (sandbox-spec-input spec))
            (if (eq code :timeout)
                (let ((extra
                       (restart-case
