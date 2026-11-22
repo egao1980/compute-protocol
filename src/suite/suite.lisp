@@ -183,6 +183,13 @@ CONFINEMENT-UNSUPPORTED)."
                       (t (equal want got))))
               pattern results)))
 
+(defun %hidden-as-denied (result)
+  "A read of a file the fixture created that fails with ENOENT: the sandbox
+hides the path (a bwrap mount namespace) instead of refusing it, a denial."
+  (if (and (consp result) (eq :error (first result)) (eq :enoent (third result)))
+      :denied
+      result))
+
 (defun %expect (results pattern)
   (unless (%results-match-p pattern results)
     (format nil "results: want ~s, got ~s" pattern results)))
@@ -281,8 +288,9 @@ CONFINEMENT-UNSUPPORTED)."
         (:outside-read-all
          (%expect (probe `((:read ,(o "victim")))) '(:ok)))
         (:outside-read-system
-         (%expect (probe `((:read ,(o "victim")) (:read ,(r "r")) (:read ,(a "f"))) :read :system)
-                  '(:denied :ok :ok)))
+         (let ((res (probe `((:read ,(o "victim")) (:read ,(r "r")) (:read ,(a "f"))) :read :system)))
+           (%expect (if (consp res) (cons (%hidden-as-denied (first res)) (rest res)) res)
+                    '(:denied :ok :ok))))
         (:network-none
          (%expect (probe `((:connect "127.0.0.1" ,port))) '(:denied)))
         (:network-allow

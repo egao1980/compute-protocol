@@ -1,5 +1,5 @@
 (defsystem "compute-protocol"
-  :version "0.3.1"
+  :version "0.3.2"
   :description "CLOS sandboxed compute protocol for cl-stack (run-sandboxed, native trusted backend, R4d confinement of one command)"
   :author "egao1980"
   :license "MIT"
@@ -27,11 +27,11 @@
   :in-order-to ((test-op (test-op "compute-protocol/tests"))))
 
 (defsystem "compute-protocol/confinement-suite"
-  :version "0.3.1"
+  :version "0.3.2"
   :description "R4d confinement suite: probe laws every confining backend must keep (SBCL)"
   :author "egao1980"
   :license "MIT"
-  :depends-on ((:version "compute-protocol" "0.3.0")
+  :depends-on ((:version "compute-protocol" "0.3.2")
                (:version "process-protocol" "0.4.1")
                (:version "process-backend-uiop" "0.3.1")
                "sb-posix"

@@ -29,12 +29,14 @@
   "errno values that mean the confinement refused the operation.")
 
 (defmacro probe-with-errno-mapping (&body body)
-  "BODY's effect → :OK, :DENIED for a refusal errno, else (:ERROR \"…\")."
+  "BODY's effect → :OK, :DENIED for a refusal errno, (:ERROR \"…\" :ENOENT)
+for a missing path, else (:ERROR \"…\")."
   `(handler-case (progn ,@body :ok)
      (sb-posix:syscall-error (e)
-       (if (member (sb-posix:syscall-errno e) *probe-denied-errnos*)
-           :denied
-           (list :error (princ-to-string e))))
+       (cond ((member (sb-posix:syscall-errno e) *probe-denied-errnos*) :denied)
+             ((= (sb-posix:syscall-errno e) sb-posix:enoent)
+              (list :error (princ-to-string e) :enoent))
+             (t (list :error (princ-to-string e)))))
      (error (e) (list :error (princ-to-string e)))))
 
 (defun probe-fd-stream (path flags direction)

@@ -126,6 +126,7 @@
       (ok (equal '(:child :ok (:value "kept")) (seventh results)) "a child process ran the nested ops")
       (ok (equal '(:ok :ok :ok :ok :ok :ok) (subseq results 7 13)))
       (ok (and (consp (nth 13 results)) (eq :error (first (nth 13 results)))) "ENOENT is an error, not a denial")
+      (ok (eq :enoent (third (nth 13 results))) "ENOENT is tagged, so a law can read a hidden path")
       (ok (equal "x" (uiop:read-file-string (merge-pathnames "b2.txt" area))) "the hardlink exists")
       (ng (probe-file (merge-pathnames "d/a.txt" area)) "effects are real"))))
 
