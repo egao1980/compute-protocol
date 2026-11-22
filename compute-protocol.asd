@@ -1,5 +1,5 @@
 (defsystem "compute-protocol"
-  :version "0.3.2"
+  :version "0.4.0"
   :description "CLOS sandboxed compute protocol for cl-stack (run-sandboxed, native trusted backend, R4d confinement of one command)"
   :author "egao1980"
   :license "MIT"
@@ -56,6 +56,7 @@
   :components ((:file "package")
                (:file "protocol-test")
                (:file "native-test")
+               (:file "spec-io-test")       ; 0.4.0: :directory, :input, mount modes, copy
                (:file "capability-test")
                (:file "restarts-test")
                (:file "demo-test")

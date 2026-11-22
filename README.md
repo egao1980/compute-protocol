@@ -14,6 +14,8 @@ There is **no in-process CL sandbox**. Untrusted Lisp runs in a container image 
 
 `:code` on the native backend signals `sandbox-denied` unless the spec sets `:allow-lisp t` (then `sbcl --script` or `ros --`).
 
+**0.4.0** (agent-eval E0): `:directory` is the command's working directory (host path for native, container path for container backends; NIL keeps the default) and `:input` is a string (UTF-8) or octet vector fed to stdin, then closed (NIL: no stdin). Mounts are designators — `path`, `(src dst)`, `(src . dst)` or `(src dst :ro|:rw)`; `parse-mount` → `(values src dst mode)`, mode `:ro` unless `:rw` (`+mount-modes+`). `sandbox-copy-to session host-path sandbox-path` / `sandbox-copy-from session sandbox-path host-path` copy files for warm sessions; their default methods signal `sandbox-unsupported` (`sandbox-unsupported-operation` `:copy-to` / `:copy-from`), so backends without copy keep working. Native: no copy.
+
 ```lisp
 (asdf:load-system "compute-protocol")
 

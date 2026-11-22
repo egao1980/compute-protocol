@@ -63,3 +63,19 @@ not acceptable. FIELD is the keyword of the field, VALUE what was given."))
                      (confinement-unavailable-reason c))))
   (:documentation "The backend cannot confine anything on this machine (wrong OS,
 missing sandbox-exec / kernel feature, not a confining backend). REASON is a string."))
+
+;;; 0.4.0: an operation the backend does not provide.
+
+(define-condition sandbox-unsupported (compute-error)
+  ((backend :initarg :backend :reader sandbox-unsupported-backend :initform nil)
+   (operation :initarg :operation :reader sandbox-unsupported-operation :initform nil))
+  (:report (lambda (c s)
+             (format s "~a does not support ~(~a~)~@[: ~a~]"
+                     (let ((b (sandbox-unsupported-backend c)))
+                       (if b (class-name (class-of b)) "the backend"))
+                     (sandbox-unsupported-operation c)
+                     (compute-error-message c))))
+  (:documentation "BACKEND has no method for OPERATION (a keyword such as :COPY-TO or
+:COPY-FROM). Signalled by the default methods of the optional protocol
+generic functions, so a backend that does not implement one fails loudly
+and every other backend keeps working. Nothing ran."))

@@ -32,6 +32,11 @@
            #:sandbox-spec-allow-lisp-p
            #:sandbox-spec-artifacts
            #:sandbox-spec-confinement
+           #:sandbox-spec-directory
+           #:sandbox-spec-input
+           #:+mount-modes+
+           #:parse-mount
+           #:mount-mode
 
            #:egress-rule
            #:egress-rule-p
@@ -63,6 +68,11 @@
            #:open-sandbox
            #:close-sandbox
            #:with-sandbox
+           #:sandbox-copy-to
+           #:sandbox-copy-from
+           #:sandbox-unsupported
+           #:sandbox-unsupported-backend
+           #:sandbox-unsupported-operation
 
            #:native-process-backend
            #:native-trusted-only-p
