@@ -58,9 +58,11 @@ inherit), environment ops read the launch's environment."))
 (defmacro %with-errno-mapping (&body body)
   `(handler-case (progn ,@body :ok)
      (sb-posix:syscall-error (e)
-       (if (member (sb-posix:syscall-errno e) *denied-errnos*)
-           :denied
-           (list :error (princ-to-string e))))
+       (cond ((member (sb-posix:syscall-errno e) *denied-errnos*) :denied)
+             ;; Tagged so a law can tell a path the sandbox hides from other errors.
+             ((= (sb-posix:syscall-errno e) sb-posix:enoent)
+              (list :error (princ-to-string e) :enoent))
+             (t (list :error (princ-to-string e)))))
      (error (e) (list :error (princ-to-string e)))))
 
 (defun %fd-stream (path flags direction)
